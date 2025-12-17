@@ -1,0 +1,175 @@
+# import importlib
+import json
+# linker = importlib.import_module("LinkerAndSyntaxChecker")
+
+class CommandPath:
+    def __init__(self, cmd_type, dict_name, pos_in_list=0, rest_path=None, root=None, code=None):
+        print("CommandPath object created!")
+        self._cmd_type = cmd_type  # Тип команды (dict или list)
+        self._dict_name = dict_name  # Имя словаря (ключ в JSON)
+        self._pos_in_list = pos_in_list  # Позиция в списке (если команда находится в списке)
+        self._rest_path = rest_path  # Рекурсивная ссылка на следующий уровень пути
+        if rest_path != None:
+            print(rest_path._dict_name)
+        if root == None:
+            # Если звено корневое
+            # Кладем код в начальное звено цепи
+            # И пропускаем ссылку на базовое стартовое перичное звено цепи
+            # (которого пока и нет, и которое мы и инициализируем)
+            self._code = code
+            self._root = None
+        else:
+            # Если звено не корневое,
+            # Получаем ссылку на код базового стартого первичного звена цепи
+            # И сохраняем ссылку на базовое стартовое перичное звено цепи
+            # (в нем есть код)
+            self._code = root.get_code()
+            self._root = root
+
+    def get_code(self):
+        return self._code
+
+    def _get_path(self):
+        """Возвращает путь к команде в виде списка."""
+        path = []
+        current = self
+
+        # Обрабатываем остальные уровни пути
+        while current._rest_path:
+            if current._cmd_type == dict:
+                path.append(current._dict_name)
+            elif current._cmd_type == list:
+                path.append(current._pos_in_list)
+            current = current._rest_path
+
+        return list(reversed(path))
+
+    def get_line_and_pos(self, code):
+        """
+        Вычисляет строку и позицию команды на основе пути и кода.
+        :param code: Весь код в виде строки.
+        :return: Кортеж (line, char_pos).
+        """
+
+        # Получаем путь к команде
+        path = self._get_path()
+
+        # Получаем карту лексем
+        element_map = self._simple_parse_brackets()
+        # print(json.dumps(element_map, indent=4))
+
+        # Начинаем поиск команды по карте
+        current_level = 0
+        current_index = 0
+
+        for step in path:
+            if isinstance(step, int):  # Если текущий шаг — число (список)
+                # Ищем n-ный элемент списка на текущем уровне
+                count = 0
+                for i in range(current_index, len(element_map)):
+                    element, level, line, char_pos = element_map[i]
+                    if level-1 == current_level and element == '[':
+                        # Нашли начало списка
+                        count += 1
+                        if count == step + 1:
+                            current_index = i + 2 # + 2, тк надо перепрыгнуть скобку и считать следующий литерал
+                            current_level += 1
+                            break
+            elif isinstance(step, str):  # Если текущий шаг — строка (словарь)
+                # Ищем ключ в словаре на текущем уровне
+                for i in range(current_index, len(element_map)):
+                    element, level, line, char_pos = element_map[i]
+                    if level-1 == current_level and element == ':':
+                        # Нашли ключ
+                        current_index = i + 2 # + 2, тк надо перепрыгнуть скобку и считать следующий литерал
+                        current_level += 1
+                        break
+
+        # После прохождения пути возвращаем строку и позицию команды
+        if current_index < len(element_map):
+            _, _, line, char_pos = element_map[current_index]
+            return line, char_pos
+
+        return None, None  # Команда не найдена
+
+    def _simple_parse_brackets(self, level=0, start_index=0, start_line=1, start_char_pos=0):
+        """
+        Рекурсивно анализирует код и строит карту скобок, ключей и значений с их уровнем, строкой и позицией.
+        :param code: Код в виде строки.
+        :param level: Текущий уровень вложенности.
+        :param start_index: Начальный индекс для анализа.
+        :param start_line: Начальная строка.
+        :param start_char_pos: Начальная позиция в строке.
+        :return: Список элементов с их уровнем, строкой и позицией, а также индекс, на котором остановились.
+        """
+        i = start_index
+        current_line = start_line
+        current_char_pos = start_char_pos
+        element_map = []  # Список для хранения элементов с их уровнем, строкой и позицией
+
+        while i < len(self._code):
+            if self._code[i] == '\n':  # Новая строка
+                current_line += 1
+                current_char_pos = 0
+                i += 1
+                continue
+
+            if self._code[i] in ['{', '[']:  # Нашли открывающую скобку
+                element_map.append([self._code[i], level + 1, current_line, current_char_pos])
+                i += 1
+                current_char_pos += 1
+                # Рекурсивно обрабатываем вложенные скобки
+                nested_map, i, current_line, current_char_pos = self._simple_parse_brackets(
+                    level + 1, i, current_line, current_char_pos
+                )
+                element_map.extend(nested_map)
+            elif self._code[i] in ['}', ']']:  # Нашли закрывающую скобку
+                element_map.append([self._code[i], level, current_line, current_char_pos])
+                i += 1
+                current_char_pos += 1
+                return element_map, i, current_line, current_char_pos
+            elif self._code[i] == '"':  # Нашли начало строки (ключ или значение)
+                # Ищем конец строки
+                end_quote_pos = self._code.find('"', i + 1)
+                if end_quote_pos == -1:
+                    self._log_error(f"Незакрытая кавычка в строке {current_line}, позиция {current_char_pos}.")
+                    return element_map, i, current_line, current_char_pos
+                # Извлекаем строку
+                string_content = self._code[i:end_quote_pos + 1]
+                element_map.append([string_content, level, current_line, current_char_pos])
+                i = end_quote_pos + 1
+                current_char_pos += len(string_content)
+            elif self._code[i] == ':':  # Нашли :
+                element_map.append([self._code[i], level, current_line, current_char_pos])
+                i += 1
+                current_char_pos += 1
+            elif self._code[i].strip() and self._code[i] not in [',', ':',' ', '\n']:  # Нашли ключ или значение
+                # Ищем конец ключа или значения
+                end_pos = i
+                while end_pos < len(self._code) and self._code[end_pos] not in [',', ':', '}', ']', '\n', ' ', '"']:
+                    end_pos += 1
+                element = self._code[i:end_pos].strip()
+                element_map.append([element, level, current_line, current_char_pos])
+                i = end_pos
+                current_char_pos += len(element)
+            else:  # Пропускаем пробелы, запятые и другие символы
+                i += 1
+                current_char_pos += 1
+
+        return element_map # , i, current_line, current_char_pos
+
+    def print_bracket_map(self, file_path):
+        """
+        Читает JSON-файл и выводит карту скобок.
+        :param file_path: Путь к файлу.
+        """
+        try:
+            with open(file_path, 'r') as file:
+                code = file.read()
+                bracket_map, _, _, _ = self._simple_parse_brackets(code)
+                print("Карта скобок:")
+                print(json.dumps(bracket_map, indent=4))
+        except FileNotFoundError:
+             self._log_error(f"Файл '{file_path}' не найден.")
+        except json.JSONDecodeError as e:
+            self._log_error(f"Ошибка в файле '{file_path}': {e}")

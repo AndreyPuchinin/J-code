@@ -1,0 +1,19 @@
+value_type - не только str, int, list, dict! Также еще bool & None (они ведь доступны в джейсоне?)
+
+CommandInclude._file_is_valid_json_check():
+ Проверка, что файл является валидным JSON.
+ ДОДЕЛАТЬ ПРОВЕРКУ ВСЕХ СТРОК!!
+
+Допилить проверку вложенных инклюдов (через action)
+
+Разобраться с CommandPath
+
+LinkerAndSyntaxChecker.txt != CommandInclude!!! LinkerAndSyntaxChecker ЕСТЬ в файле!!
+
+!!! - ГЛАВНАЯ ПРОБЛЕМА на сейчас: main 20
+
+Где вызывается CommandPath.get_line_and_pos()?
+
+CommandPath._simple_parse_brackets() вроде бы как завершен (проверил)
+
+Убрать _clean_code & _remove_stump_leaves

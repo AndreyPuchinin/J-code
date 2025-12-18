@@ -35,19 +35,52 @@ class LinkerAndSyntaxChecker:
             }
         ]
 
+    def _append_errors(self, error_message):
+        """
+        Append errors into self._errors as groups (each group is a list of lines).
+        Accepts either a string or a list of strings (possibly containing empty strings as group separators).
+        """
+        if isinstance(error_message, str):
+            if error_message.strip() == "":
+                return
+            self._errors.append([error_message])
+        elif isinstance(error_message, list):
+            group = []
+            for line in error_message:
+                if line == "":
+                    if group:
+                        self._errors.append(group)
+                        group = []
+                else:
+                    group.append(line)
+            if group:
+                self._errors.append(group)
+        else:
+            self._errors.append([str(error_message)])
+
     def _log_error(self, error_message):
         """
-        Добавляет ошибку в список ошибок.
-        :param error_message: Сообщение об ошибке.
+        Добавляет ошибку в список ошибок (принимает str или list).
         """
-        self._errors.extend(error_message)
+        self._append_errors(error_message)
 
     def print_errors(self):
         """
-        Выводит все накопленные ошибки.
+        Выводит все накопленные ошибки в формате с нумерацией и заголовком.
+        Формат:
+        Ошибка i/n:
+        Ошибка синтаксиса!
+        RootFile, str, pos, command, Ошибка: <текст ошибки>
+        ...
         """
-        for error in self._errors:
-            print(error)
+        total = len(self._errors)
+        if total == 0:
+            return
+        for idx, group in enumerate(self._errors):
+            print(f"Ошибка {idx+1}/{total}:")
+            for line in group:
+                print(line)
+            print()  # разделительная пустая строка
 
     def check_syntax(self):
         """
@@ -335,8 +368,8 @@ class LinkerAndSyntaxChecker:
                             cmd_path=cmd_path,
                             file=self._file_path
                         )
-                        # Errors() возвращает список строк — присоединяем их к общему списку
-                        self._errors.extend(command_obj.Errors())
+                        # Errors() возвращает список строк — присоединяем их к общему списку (группами)
+                        self._append_errors(command_obj.Errors())
                         command_tree[key] = _action
                 else:
                     # Если ключ не команда, просто копируем значение
@@ -467,7 +500,7 @@ class LinkerAndSyntaxChecker:
         if isinstance(command_tree, dict):
             for key, command_obj in command_tree.items():
                 if isinstance(command_obj, CommandNode):
-                    self._errors.extend(command_obj.Errors())  # Присоединяем результат Errors() к self._errors
+                    self._append_errors(command_obj.Errors())  # Присоединяем результат Errors() к self._errors
                     self.validate_command_tree(command_obj._action)  # Рекурсивно проверяем вложенные команды
         elif isinstance(command_tree, list):
             for item in command_tree:

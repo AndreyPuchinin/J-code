@@ -32,25 +32,27 @@ class CommandNode(ABC):
         """
         return [(self._file, self._line, self._char_pos, self._name)]
 
+    def _format_error_line(self, file, line, pos, name, message):
+        file_str = file if file is not None else "<неизвестен>"
+        line_str = str(line) if line is not None else "<не найдена>"
+        pos_str = str(pos) if pos is not None else "<не найдена>"
+        return f"-в файле \'{file_str}\' на строке {line_str} на позиции {pos_str}: команда {name}, текст ошибки: {message}"
+
     def _log_error(self, message):
         """Форматированный вывод цепочки ошибок в виде нескольких строк.
 
         Формат:
         Ошибка команды!:
-        RootFile, line, pos, command, Ошибка: <текст ошибки>
-        InnerFile, line, pos, command, Ошибка: <текст ошибки>
+        RootFile, str, pos, command, Ошибка: <текст ошибки>
+        InnerFile, str, pos, command, Ошибка: <текст ошибки>
         ...
 
         Пустая строка в конце для разделения.
         """
         chain = self._collect_error_chain()
-        # Нормализуем значения
-        formatted_lines = ["Ошибка синтаксиса!"]
+        formatted_lines = ["Ошибка синтаксиса!" ]
         for file, line, pos, name in chain:
-            file_str = file if file is not None else "<неизвестен>"
-            line_str = line if line is not None else "<не найдена>"
-            pos_str = pos if pos is not None else "<не найдена>"
-            formatted_lines.append(f"-в файле \'{file_str}\' на строке {line_str} на позиции {pos_str}: команда \'{name}\', текст ошибки: {message}")
+            formatted_lines.append(self._format_error_line(file, line, pos, name, message))
         formatted_lines.append("")  # пустая строка для разделения
         self._errors.extend(formatted_lines)
 

@@ -1,0 +1,89 @@
+[
+    {
+        "UnknownCommand": {
+            "parent": [
+                0
+            ],
+            "body": true
+        }
+    },
+    {
+        "include": {
+            "parent": [
+                1
+            ],
+            "body": "123"
+        }
+    },
+    {
+        "include": {
+            "parent": [
+                2
+            ],
+            "body": {
+                "include": {
+                    "parent": [
+                        2,
+                        "include"
+                    ],
+                    "body": "123"
+                }
+            }
+        }
+    },
+    {
+        "game_field": {
+            "parent": [
+                3,
+                0
+            ],
+            "body": [
+                {
+                    "UnknownCommand": {
+                        "parent": [
+                            3,
+                            0,
+                            "game_field",
+                            0
+                        ],
+                        "body": []
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "UnknownCommand": {
+            "parent": [
+                4
+            ],
+            "body": "1"
+        }
+    },
+    {
+        "UnknownCommand": {
+            "parent": [
+                5
+            ],
+            "body": []
+        }
+    },
+    {
+        "UnknownCommand": {
+            "parent": [
+                5,
+                0
+            ],
+            "body": []
+        }
+    },
+    {
+        "UnknownCommand": {
+            "parent": [
+                5,
+                1
+            ],
+            "body": true
+        }
+    }
+]

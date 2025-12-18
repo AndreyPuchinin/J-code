@@ -36,7 +36,7 @@ class CommandNode(ABC):
         file_str = file if file is not None else "<неизвестен>"
         line_str = str(line) if line is not None else "<не найдена>"
         pos_str = str(pos) if pos is not None else "<не найдена>"
-        return f"-в файле \'{file_str}\' на строке {line_str} на позиции {pos_str}: команда {name}, текст ошибки: {message}"
+        return f"-Файл: \'{file_str}\'\n-Команда: {name}\n-Строка: {line_str}\n-Позиция: {pos_str}\n-Текст ошибки: {message}"
 
     def _log_error(self, message):
         """Форматированный вывод цепочки ошибок в виде нескольких строк.

@@ -323,15 +323,18 @@ class LinkerAndSyntaxChecker:
                         # Определяем line и char_pos на основе полного JSON-кода
                         line, char_pos = self._get_command_position(cmd_path)
 
+                        _action = self.generate_cmd_obj_map(value["body"])
+
                         command_obj = command_class(
                             name=key,
                             value_type=command_info["value_type"],
-                            action=self.generate_cmd_obj_map(value["body"]),
+                            action=_action,
                             line=line,
                             char_pos=char_pos,
                             cmd_path=cmd_path
                         )
-                        command_tree[key] = command_obj
+                        self._log_error(command_obj.Errors())
+                        command_tree[key] = _action
                 else:
                     # Если ключ не команда, просто копируем значение
                     command_tree[key] = value

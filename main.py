@@ -10,6 +10,7 @@ linker = LinkerAndSyntaxChecker(code)
 
 # Вводим J-карту команд
 cmd_J_map = linker.generate_cmd_J_map()
+print()
 print(cmd_J_map)
 print()
 

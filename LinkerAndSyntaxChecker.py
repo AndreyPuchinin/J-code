@@ -2,6 +2,7 @@ from CommandInclude import CommandInclude
 from CommandGameField_test import CommandGameField
 from CommandPath import CommandPath
 from CommandNode import CommandNode
+from CommandUnknown import CommandUnknown
 import json
 
 class LinkerAndSyntaxChecker:
@@ -10,6 +11,13 @@ class LinkerAndSyntaxChecker:
         self._errors = []  # Список для хранения ошибок
         self.check_syntax()
         self._commands_info = [
+            {
+                "UnknownCommand": {
+                    "class": CommandUnknown,
+                    "name": "UnknownCommand",
+                    "value_type": object
+                }
+            },
             {
                 "include": {
                     "class": CommandInclude,
@@ -130,10 +138,12 @@ class LinkerAndSyntaxChecker:
 
     def generate_cmd_J_map_with_parents(self, data=None, parent_path=None):
         """
-        Создает J-карту команд с информацией о родителе, сохраняя только команды.
+        Создает J-карту команд с информацией о родителе.
+        Для нераспознанных ключей/элементов создаются записи UnknownCommand,
+        которые содержат фактическое значение (action) и путь parent.
         :param data: Данные для обработки (словарь, список или значение).
         :param parent_path: Путь к родителю (список ключей или индексов).
-        :return: J-карта команд.
+        :return: J-карта команд или список записей UnknownCommand/команд.
         """
         if data is None:
             data = json.loads(self._code)  # Используем полный JSON-код
@@ -141,29 +151,131 @@ class LinkerAndSyntaxChecker:
         if parent_path is None:
             parent_path = []
 
+        # Если словарь
         if isinstance(data, dict):
-            # Обрабатываем словарь
-            command_map = {}
-            for key, value in data.items():
-                if self._is_command(key):
-                    # Добавляем информацию о родителе
-                    command_map[key] = {
-                        "parent": parent_path,
-                        "body": self.generate_cmd_J_map_with_parents(value, parent_path + [key])
-                    }
+            # Проверим, есть ли среди ключей настоящие команды
+            command_keys = [k for k in data.keys() if self._is_command(k)]
+            unknown_entries = []
+
+            # Если есть настоящие команды, сохраняем их в словарь
+            if command_keys:
+                command_map = {}
+                for key, value in data.items():
+                    if self._is_command(key):
+                        command_map[key] = {
+                            "parent": parent_path,
+                            "body": self.generate_cmd_J_map_with_parents(value, parent_path + [key])
+                        }
+                    else:
+                        # Нераспознанный ключ: добавляем запись для самого ключа
+                        unknown_entries.append({"UnknownCommand": {"parent": parent_path, "body": key}})
+
+                        # Обрабатываем значение ключа и добавляем соответствующие UnknownCommand-записи
+                        if isinstance(value, list):
+                            # Представляем сам контейнер списка
+                            unknown_entries.append({"UnknownCommand": {"parent": parent_path + [key], "body": []}})
+                            for idx, item in enumerate(value):
+                                res = self.generate_cmd_J_map_with_parents(item, parent_path + [key, idx])
+                                if isinstance(res, list):
+                                    unknown_entries.extend(res)
+                                else:
+                                    # скаляр или словарь/прочее
+                                    if isinstance(res, dict) and list(res.keys()) == ["UnknownCommand"]:
+                                        unknown_entries.append(res)
+                                    else:
+                                        unknown_entries.append({"UnknownCommand": {"parent": parent_path + [key, idx], "body": res}})
+                        elif isinstance(value, dict):
+                            unknown_entries.append({"UnknownCommand": {"parent": parent_path + [key], "body": {}}})
+                            # рекурсивно обрабатываем внутренние ключи
+                            for subk, subv in value.items():
+                                res = self.generate_cmd_J_map_with_parents({subk: subv}, parent_path + [key])
+                                if isinstance(res, list):
+                                    unknown_entries.extend(res)
+                                else:
+                                    unknown_entries.append(res)
+                        else:
+                            unknown_entries.append({"UnknownCommand": {"parent": parent_path + [key], "body": value}})
+
+                # Если есть сочетание команд и неизвестных — вернем список, чтобы их можно было упорядочить в списке-родителе
+                if unknown_entries:
+                    result = [command_map]
+                    result.extend(unknown_entries)
+                    return result
                 else:
-                    # Если ключ не команда, просто копируем значение
-                    command_map[key] = value
-            return command_map
+                    return command_map
+
+            # Если в словаре нет известных команд — возвращаем список UnknownCommand-записей
+            else:
+                for key, value in data.items():
+                    unknown_entries.append({"UnknownCommand": {"parent": parent_path, "body": key}})
+                    if isinstance(value, list):
+                        unknown_entries.append({"UnknownCommand": {"parent": parent_path + [key], "body": []}})
+                        for idx, item in enumerate(value):
+                            res = self.generate_cmd_J_map_with_parents(item, parent_path + [key, idx])
+                            if isinstance(res, list):
+                                unknown_entries.extend(res)
+                            else:
+                                if isinstance(res, dict) and list(res.keys()) == ["UnknownCommand"]:
+                                    unknown_entries.append(res)
+                                else:
+                                    unknown_entries.append({"UnknownCommand": {"parent": parent_path + [key, idx], "body": res}})
+                    elif isinstance(value, dict):
+                        unknown_entries.append({"UnknownCommand": {"parent": parent_path + [key], "body": {}}})
+                        for subk, subv in value.items():
+                            res = self.generate_cmd_J_map_with_parents({subk: subv}, parent_path + [key])
+                            if isinstance(res, list):
+                                unknown_entries.extend(res)
+                            else:
+                                unknown_entries.append(res)
+                    else:
+                        unknown_entries.append({"UnknownCommand": {"parent": parent_path + [key], "body": value}})
+                return unknown_entries
+
+        # Если список
         elif isinstance(data, list):
-            # Обрабатываем список
-            command_map = []
-            for index, item in enumerate(data):
-                command_map.append(self.generate_cmd_J_map_with_parents(item, parent_path + [index]))
-            return command_map
+            # Проверим, есть ли в списке какие-либо элементы-словарь с командами
+            has_command_in_list = False
+            for item in data:
+                if isinstance(item, dict):
+                    for k in item.keys():
+                        if self._is_command(k):
+                            has_command_in_list = True
+                            break
+                if has_command_in_list:
+                    break
+
+            # Если список находится внутри тела команды, или содержит командные элементы —
+            # возвращаем список структур как есть (без контейнерной записи)
+            if parent_path and isinstance(parent_path[-1], str) and self._is_command(parent_path[-1]) or has_command_in_list:
+                command_map = []
+                for index, item in enumerate(data):
+                    res = self.generate_cmd_J_map_with_parents(item, parent_path + [index])
+                    if isinstance(res, list):
+                        command_map.extend(res)
+                    else:
+                        command_map.append(res)
+                return command_map
+
+            # Иначе — список не является телом команды и не содержит команд: создаём контейнерную запись
+            unknown_entries = [{"UnknownCommand": {"parent": parent_path, "body": []}}]
+            for idx, item in enumerate(data):
+                res = self.generate_cmd_J_map_with_parents(item, parent_path + [idx])
+                if isinstance(res, list):
+                    unknown_entries.extend(res)
+                else:
+                    if isinstance(res, dict) and list(res.keys()) == ["UnknownCommand"]:
+                        unknown_entries.append(res)
+                    else:
+                        unknown_entries.append({"UnknownCommand": {"parent": parent_path + [idx], "body": res}})
+            return unknown_entries
+
+        # Если скаляр
         else:
-            # Возвращаем значение как есть (строки, числа, булевы значения)
-            return data
+            # Если находимся внутри тела известной команды — возвращаем значение как есть
+            if parent_path and isinstance(parent_path[-1], str) and self._is_command(parent_path[-1]):
+                return data
+            # Иначе — оборачиваем в UnknownCommand
+            return {"UnknownCommand": {"parent": parent_path, "body": data}}
 
     def generate_cmd_J_map(self):
         """

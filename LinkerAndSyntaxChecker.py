@@ -106,70 +106,6 @@ class LinkerAndSyntaxChecker:
                 return True
         return False
 
-    def _clean_code(self, data):
-        """
-        Рекурсивно очищает код, оставляя только команды и их тела.
-        :param data: Данные для обработки (словарь, список или значение).
-        :return: Очищенные данные.
-        """
-        if isinstance(data, dict):
-            # Обрабатываем словарь
-            cleaned_data = {}
-            for key, value in data.items():
-                if self._is_command(key):  # Если ключ — это команда
-                    # Рекурсивно обрабатываем тело команды
-                    # Не надо, так как, если команда есть,
-                    # её тело сохраняется полностью
-                    #cleaned_value = self._clean_code(value)
-                    cleaned_data[key] = data[key]
-            return cleaned_data if cleaned_data else None
-        elif isinstance(data, list):
-            # Обрабатываем список
-            cleaned_list = []
-            for pos, item in enumerate(data):
-                cleaned_item = self._clean_code(item)
-                if cleaned_item != None and \
-                   cleaned_item != [None] and \
-                   not isinstance(cleaned_item, bool) and \
-                   not isinstance(cleaned_item, str) and \
-                   not isinstance(cleaned_item, int):
-                    cleaned_list += [cleaned_item]
-            return cleaned_list if cleaned_list else None
-        else:
-            # Возвращаем значение как есть (лепестки от веток)
-            return data
-
-    def _remove_stump_leaves(self, data):
-        """
-        Удаляет лепестки от пенька (значения-висячие вершины на верхнем уровне).
-        :param data: Данные для обработки.
-        :return: Очищенные данные.
-        """
-
-        # Если имеем дело с первым JSON-объектом НЕ как со списком:
-        if not isinstance(data, list):
-            return None
-
-        # Если имеем дело с первым JSON-объектом как со словарем:
-        if isinstance(data, dict):
-            return data
-
-
-        # Если имеем дело с первым JSON-объект как со споском:
-        if isinstance(data, list):
-
-            data_res = []
-
-            # удаляем все лепестки
-            for data_el in data:
-
-                # если начальный JSON-объект == словарь
-                if isinstance(data_el, dict) or isinstance(data_el, list):
-                    # сохраняем его в копию
-                    data_res += [data_el]
-
-            return data_res
-
     def generate_cmd_J_map_with_parents(self, data=None, parent_path=None):
         """
         Создает J-карту команд с информацией о родителе.
@@ -311,31 +247,6 @@ class LinkerAndSyntaxChecker:
             # Иначе — оборачиваем в UnknownCommand
             return {"UnknownCommand": {"parent": parent_path, "body": data}}
 
-    def generate_cmd_J_map(self):
-        """
-        Создает JSON-карту команд, удаляя всё, что не является командой.
-        :param code: Код в виде строки.
-        :return: JSON-карта команд.
-        """
-        if self._errors != []:
-            return None
-
-        # Копируем код для работы
-        code_copy = json.loads(self._code)
-
-        # Удаляем лепестки от пенька
-        cleaned_code = self._remove_stump_leaves(code_copy)
-
-        # Очищаем код, оставляя только команды и их тела
-        if cleaned_code is not None:
-            cleaned_code = self._clean_code(cleaned_code)
-
-        # ВРЕМЕННО, ЭКСПЕРИМЕНТА РАДИ!! заменим cleaned_code на code_copy
-        cleaned_code = code_copy
-
-        # Возвращаем JSON-карту команд
-        return cleaned_code
-
     def generate_cmd_obj_map(self, command_map):
         """
         Преобразует J-карту команд в карту объектов команд, используя полный JSON-код для расчета позиций.
@@ -441,45 +352,6 @@ class LinkerAndSyntaxChecker:
         # print("out")
 
         return cmd_path
-
-    # def generate_cmd_obj_map(self, command_json):
-    #     """
-    #     Преобразует JSON-дерево команд в дерево объектов классов-наследников CommandNode.
-    #     :param command_json: JSON-дерево команд.
-    #     :return: Дерево объектов команд.
-    #     """
-    #     if isinstance(command_json, dict):
-    #         # Обрабатываем словарь
-    #         command_tree = {}
-    #         for key, value in command_json.items():
-    #             if self._is_command(key):
-    #                 # Создаем объект команды
-    #                 command_info = self._get_command_info(key)
-    #                 print(value)
-    #                 if command_info:
-    #                     command_class = command_info["class"]
-    #                     command_obj = command_class(
-    #                         name=key,
-    #                         value_type=command_info["value_type"],
-    #                         action=self.generate_cmd_obj_map(value),
-    #                         line=0,
-    #                         char_pos=0,
-    #                         cmd_path=CommandPath(command_info["value_type"], key, value["parent"], )  # Пример пути, можно адаптировать
-    #                     )
-    #                     command_tree[key] = command_obj
-    #             else:
-    #                 # Если ключ не команда, просто копируем значение
-    #                 command_tree[key] = value
-    #         return command_tree
-    #     elif isinstance(command_json, list):
-    #         # Обрабатываем список
-    #         command_tree = []
-    #         for item in command_json:
-    #             command_tree.append(self.generate_cmd_obj_map(item))
-    #         return command_tree
-    #     else:
-    #         # Возвращаем значение как есть (строки, числа, булевы значения)
-    #         return command_json
 
     def _get_command_info(self, key):
         """

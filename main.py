@@ -29,5 +29,10 @@ linker.log_json(cmd_obj_map, 'J-sub_code/cmd_obj_map.json')
 # Проверяем все команды на ошибки
 linker.validate_command_tree(cmd_obj_map)
 
-# Выводим ошибки, если они есть
-linker.print_errors()
+# Получаем ошибки (если есть) и логируем в файл
+errors_output = linker.get_errors()
+if errors_output:
+    linker.write_errors_to_file(errors_output, 'J-sub_code/errors.log')
+    print("Ощибки записаны в J-sub_code/errors.log")
+else:
+    print("Ошибок не найдено.")

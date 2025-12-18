@@ -65,23 +65,44 @@ class LinkerAndSyntaxChecker:
         """
         self._append_errors(error_message)
 
-    def print_errors(self):
+    def get_errors(self):
         """
-        Выводит все накопленные ошибки в формате с нумерацией и заголовком.
-        Формат:
+        Возвращает все накопленные ошибки в формате с нумерацией и заголовком в виде списка строк.
+        Формат для каждой группы:
         Ошибка i/n:
-        Ошибка синтаксиса!
-        RootFile, str, pos, command, Ошибка: <текст ошибки>
-        ...
+        <строки группы>
+        (пустая строка разделитель)
+
+        :return: список строк
         """
         total = len(self._errors)
         if total == 0:
-            return
+            return []
+        out_lines = []
         for idx, group in enumerate(self._errors):
-            print(f"Ошибка {idx+1}/{total}:")
-            for line in group:
-                print(line)
-            print()  # разделительная пустая строка
+            out_lines.append(f"Ошибка {idx+1}/{total}:")
+            out_lines.extend(group)
+            out_lines.append("")  # разделительная пустая строка
+        return out_lines
+
+    def write_errors_to_file(self, errors_output, filename):
+        """Записывает вывод ошибок в указанный файл.
+
+        :param errors_output: список строк, как возвращаемый `get_errors()`
+        :param filename: путь к файлу для записи
+        """
+        if not errors_output:
+            return
+        try:
+            dir_name = os.path.dirname(filename)
+            if dir_name:
+                os.makedirs(dir_name, exist_ok=True)
+            with open(filename, 'w', encoding='utf-8') as f:
+                for line in errors_output:
+                    f.write(line + '\n')
+        except Exception as e:
+            # Если запись файла провалилась, добавим об этом группу ошибок
+            self._append_errors([f"Ошибка записи ошибок в файл '{filename}': {e}", ""])
 
     def log_json(self, data, filename):
         """Сохраняет произвольный JSON-совместимый объект в файл.

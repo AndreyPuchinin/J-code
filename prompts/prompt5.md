@@ -1,0 +1,1 @@
+Преобразуй LinkerAndSyntaxChecker.print_errors() в LinkerAndSyntaxChecker.get_errors() - так, чтобы ошибки не выписывались, а возвращались. Добавь в LinkerAndSyntaxChecker метод, который бы принимал этот вывод как параметр вместе с именем файла и логировал бы этот вывод в этот файл

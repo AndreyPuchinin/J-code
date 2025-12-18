@@ -1,5 +1,6 @@
 # import importlib
 import json
+import os
 # linker = importlib.import_module("LinkerAndSyntaxChecker")
 
 class CommandPath:
@@ -164,12 +165,37 @@ class CommandPath:
         :param file_path: Путь к файлу.
         """
         try:
-            with open(file_path, 'r') as file:
-                code = file.read()
-                bracket_map, _, _, _ = self._simple_parse_brackets(code)
-                print("Карта скобок:")
-                print(json.dumps(bracket_map, indent=4))
-        except FileNotFoundError:
-             self._log_error(f"Файл '{file_path}' не найден.")
-        except json.JSONDecodeError as e:
-            self._log_error(f"Ошибка в файле '{file_path}': {e}")
+            # Получаем карту скобок через геттер
+            bracket_map = self.get_bracket_map()
+
+            # Если не удалось получить карту — выходим
+            if bracket_map is None:
+                return None
+
+            # Создаем директорию для файла, если необходимо
+            dir_name = os.path.dirname(file_path)
+            if dir_name:
+                os.makedirs(dir_name, exist_ok=True)
+
+            # Записываем карту в указанный файл в формате JSON
+            with open(file_path, 'w', encoding='utf-8') as out_f:
+                json.dump(bracket_map, out_f, ensure_ascii=False, indent=4)
+
+            return bracket_map
+        except Exception as e:
+            try:
+                self._log_error(f"Ошибка при формировании/записи карты скобок '{file_path}': {e}")
+            except Exception:
+                pass
+
+    def get_bracket_map(self):
+        """Возвращает карту скобок, не выводя её и не записывая в файл."""
+        try:
+            bracket_map = self._simple_parse_brackets()
+            return bracket_map
+        except Exception as e:
+            try:
+                self._log_error(f"Ошибка при формировании карты скобок: {e}")
+            except Exception:
+                pass
+            return None

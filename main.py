@@ -29,10 +29,12 @@ linker.log_json(cmd_obj_map, 'J-sub_code/cmd_obj_map.json')
 # Проверяем все команды на ошибки
 linker.validate_command_tree(cmd_obj_map)
 
+linker.print_bracket_map('Games/BASE_CODE.json','J-sub_code/bracket_map.json')
+
 # Получаем ошибки (если есть) и логируем в файл
 errors_output = linker.get_errors()
 if errors_output:
     linker.write_errors_to_file(errors_output, 'J-sub_code/errors.log')
-    print("Ощибки записаны в J-sub_code/errors.log")
+    print("Ошибки записаны в J-sub_code/errors.log")
 else:
     print("Ошибок не найдено.")

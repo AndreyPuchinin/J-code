@@ -420,3 +420,45 @@ class LinkerAndSyntaxChecker:
             for item in command_tree:
                 self.validate_command_tree(item)
 
+    def print_bracket_map(self, input_file_path, output_file_path):
+        """
+        Определяет тип корневого JSON-объекта, формирует parent_path и вызывает
+        метод `print_bracket_map` у корневого CommandPath.
+
+        Поведение parent_path в зависимости от типа корня:
+        - dict -> ['dict']
+        - list -> [0]
+        - иначе -> добавляется ошибка и функция завершается
+        :param file_path: Путь к JSON-файлу - входному и выходному
+        """
+        try:
+            with open(input_file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        except FileNotFoundError:
+            self._append_errors([f"Не могу создать карту скобок!\nФайл '{input_file_path}' не найден.", ""])
+            return
+        except json.JSONDecodeError as e:
+            self._append_errors([f"Не могу создать карту скобок!\nОшибка разбора JSON в файле '{input_file_path}': {e}", ""])
+            return
+
+        # Определяем parent_path в зависимости от типа корневого объекта
+        if isinstance(data, dict):
+            parent_path = ['dict']
+        elif isinstance(data, list):
+            parent_path = [0]
+        else:
+            # Несоответствующий тип корня — сообщаем об ошибке и выходим
+            self._append_errors([f"Не могу создать карту скобок!\nНеподдерживаемый корневой тип JSON в файле '{file_path}': {type(data).__name__}", ""])
+            return
+
+        # Создаем корневой CommandPath и вызываем его print_bracket_map
+        root_cmd_path = self._create_command_path(parent_path)
+        if root_cmd_path is None:
+            self._append_errors([f"Не удалось создать CommandPath для корня: {parent_path}", ""])
+            return
+
+        try:
+            root_cmd_path.print_bracket_map(output_file_path)
+        except Exception as e:
+            self._append_errors([f"Ошибка при выводе карты скобок для '{file_path}': {e}", ""])
+

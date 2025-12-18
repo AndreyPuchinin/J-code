@@ -4,13 +4,13 @@ import json
 
 class CommandPath:
     def __init__(self, cmd_type, dict_name, pos_in_list=0, rest_path=None, root=None, code=None):
-        print("CommandPath object created!")
+        # print("CommandPath object created!")
         self._cmd_type = cmd_type  # Тип команды (dict или list)
         self._dict_name = dict_name  # Имя словаря (ключ в JSON)
         self._pos_in_list = pos_in_list  # Позиция в списке (если команда находится в списке)
         self._rest_path = rest_path  # Рекурсивная ссылка на следующий уровень пути
-        if rest_path != None:
-            print(rest_path._dict_name)
+        # if rest_path != None:
+        #     print(rest_path._dict_name)
         if root == None:
             # Если звено корневое
             # Кладем код в начальное звено цепи

@@ -185,7 +185,7 @@ class LinkerAndSyntaxChecker:
             cleaned_code = self._clean_code(cleaned_code)
 
         # ВРЕМЕННО, ЭКСПЕРИМЕНТА РАДИ!! заменим cleaned_code на code_copy
-        # cleaned_code = code_copy
+        cleaned_code = code_copy
 
         # Возвращаем JSON-карту команд
         return cleaned_code
@@ -254,12 +254,12 @@ class LinkerAndSyntaxChecker:
 
         cmd_path = None
 
-        print("In")
+        # print("In")
 
-        if rest_path is not None:
-            print(rest_path._dict_name, parent_path)
-        else:
-            print(None, parent_path)
+        # if rest_path is not None:
+        #     print(rest_path._dict_name, parent_path)
+        # else:
+        #     print(None, parent_path)
 
         if not parent_path:
             return rest_path  # Если путь пуст, возвращаем rest_path
@@ -280,14 +280,14 @@ class LinkerAndSyntaxChecker:
             cmd_path = CommandPath(list, "", first_step, rest_path, start_cmd_path, self._code)
         elif isinstance(first_step, str):
             # Шаг — ключ в словаре
-            print(first_step)
+            # print(first_step)
             cmd_path = CommandPath(dict, first_step, 0, rest_path, start_cmd_path, self._code)
 
         # Если звено корневое, сохраняем ссылку на него
         if start_cmd_path == None:
             start_cmd_path = cmd_path
 
-        print("out")
+        # print("out")
 
         return cmd_path
 

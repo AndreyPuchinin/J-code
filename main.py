@@ -1,6 +1,8 @@
 import json
 from LinkerAndSyntaxChecker import LinkerAndSyntaxChecker
-# import json
+
+# Разделяем системный и пользовательский вывод
+print()
 
 # Читаем файл
 with open("Games/BASE_CODE.json", 'r') as file:
@@ -12,14 +14,17 @@ linker = LinkerAndSyntaxChecker(code, "Games/BASE_CODE.json")
 # Получаем код из json'а
 loaded_code = json.loads(code)
 
+# Генерируем J-карту с родительскими контекстами
 cmd_J_map_with_parents = linker.generate_cmd_J_map_with_parents(loaded_code)
-print(f"cmd_J_map_with_parents = {json.dumps(cmd_J_map_with_parents, indent=4)}")
-print()
+
+# Сохраняем промежуточную J-карту в файл
+linker.log_json(cmd_J_map_with_parents, 'J-sub_code/cmd_J_map_with_parents.json')
 
 # Преобразуем JSON-дерево в дерево объектов команд
 cmd_obj_map = linker.generate_cmd_obj_map(cmd_J_map_with_parents)
-print(f"cmd_obj_map = {json.dumps(cmd_J_map_with_parents, indent=4)}")
-print()
+
+# Сохраняем дерево объектов команд в файл
+linker.log_json(cmd_obj_map, 'J-sub_code/cmd_obj_map.json')
 
 # Проверяем все команды на ошибки
 linker.validate_command_tree(cmd_obj_map)

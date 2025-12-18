@@ -1,0 +1,1 @@
+Дополни в LinkerAndSyntaxChecker метод логирования промежуточных джейсонов (cmd_J_map_with_parents, cmd_obj_map из main и каких угодно еще) в файл. Пусть джейсон и имя файла будут параметрами этого метода LinkerAndSyntaxChecker 

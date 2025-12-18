@@ -4,6 +4,7 @@ from CommandPath import CommandPath
 from CommandNode import CommandNode
 from CommandUnknown import CommandUnknown
 import json
+import os
 
 class LinkerAndSyntaxChecker:
     def __init__(self, code, file_path=None):
@@ -82,6 +83,23 @@ class LinkerAndSyntaxChecker:
                 print(line)
             print()  # разделительная пустая строка
 
+    def log_json(self, data, filename):
+        """Сохраняет произвольный JSON-совместимый объект в файл.
+
+        :param data: Объект, который можно сериализовать в JSON (dict/list/str и т.д.).
+        :param filename: Путь к файлу, в который будет записан JSON.
+        """
+        try:
+            # Создаем директорию, если указана
+            dir_name = os.path.dirname(filename)
+            if dir_name:
+                os.makedirs(dir_name, exist_ok=True)
+            with open(filename, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=4)
+        except Exception as e:
+            # Логируем ошибку записи как группу ошибок
+            self._append_errors([f"Ошибка записи JSON в файл '{filename}': {e}", ""])
+
     def check_syntax(self):
         """
         Проверяет синтаксис JSON-кода.
@@ -92,7 +110,10 @@ class LinkerAndSyntaxChecker:
             json.loads(self._code)
             return True
         except json.JSONDecodeError as e:
-            self._log_error(f"Ошибка синтаксиса: {e}")
+            # Формируем структурированный блок ошибки синтаксиса
+            file_str = self._file_path if self._file_path is not None else "<неизвестен>"
+            message_line = f"{file_str}, <не найдена>, <не найдена>, <none>, Ошибка: {e}"
+            self._append_errors(["Ошибка синтаксиса!", message_line, ""])  # пустая строка разделяет группы
             return False
 
     def _is_command(self, key):

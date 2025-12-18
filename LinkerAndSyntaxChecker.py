@@ -6,8 +6,9 @@ from CommandUnknown import CommandUnknown
 import json
 
 class LinkerAndSyntaxChecker:
-    def __init__(self, code):
+    def __init__(self, code, file_path=None):
         self._code = code
+        self._file_path = file_path
         self._errors = []  # Список для хранения ошибок
         self.check_syntax()
         self._commands_info = [
@@ -39,7 +40,7 @@ class LinkerAndSyntaxChecker:
         Добавляет ошибку в список ошибок.
         :param error_message: Сообщение об ошибке.
         """
-        self._errors.append(error_message)
+        self._errors.extend(error_message)
 
     def print_errors(self):
         """
@@ -331,9 +332,11 @@ class LinkerAndSyntaxChecker:
                             action=_action,
                             line=line,
                             char_pos=char_pos,
-                            cmd_path=cmd_path
+                            cmd_path=cmd_path,
+                            file=self._file_path
                         )
-                        self._log_error(command_obj.Errors())
+                        # Errors() возвращает список строк — присоединяем их к общему списку
+                        self._errors.extend(command_obj.Errors())
                         command_tree[key] = _action
                 else:
                     # Если ключ не команда, просто копируем значение

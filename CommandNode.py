@@ -1,13 +1,14 @@
 from abc import ABC, abstractmethod
 
 class CommandNode(ABC):
-    def __init__(self, name, value_type, action, line, char_pos, command_path):
+    def __init__(self, name, value_type, action, line, char_pos, command_path, file):
         self._name = name  # Имя команды (ключ в JSON)
         self._value_type = value_type  # Ожидаемый тип значения (list, dict, int, str и т.д.)
         self._action = action  # Значение команды (то, что после ":")
         self._line = line  # Номер строки
         self._char_pos = char_pos  # Позиция символа
         self._command_path = command_path  # Путь к команде
+        self._file = file  # Файл, откуда взята команда
         self._errors = []  # Список для хранения ошибок
 
     @abstractmethod
@@ -24,14 +25,34 @@ class CommandNode(ABC):
     def get_char_pos(self):
         return self._char_pos
 
+    def _collect_error_chain(self):
+        """Собирает цепочку контекстов ошибок от корня до текущего узла.
+        Сейчас нет явной структуры родителей, поэтому возвращаем только текущий узел.
+        В будущем можно расширить, чтобы трассировать реальные вложенные файлы/контексты.
+        """
+        return [(self._file, self._line, self._char_pos, self._name)]
+
     def _log_error(self, message):
-        """Логирование ошибки с указанием места в коде."""
-        if self._line == None:
-            self._line = "<не найдена>"
-        if self._char_pos == None:
-            self._char_pos = "<не найдена>"
-        error_message = f"Ошибка в файле '{self._name}' по пути {self._command_path._get_path()} (строка = {self._line}, позиция = {self._char_pos}): {message}"
-        self._errors.append(error_message)
+        """Форматированный вывод цепочки ошибок в виде нескольких строк.
+
+        Формат:
+        Ошибка команды!:
+        RootFile, line, pos, command, Ошибка: <текст ошибки>
+        InnerFile, line, pos, command, Ошибка: <текст ошибки>
+        ...
+
+        Пустая строка в конце для разделения.
+        """
+        chain = self._collect_error_chain()
+        # Нормализуем значения
+        formatted_lines = ["Ошибка синтаксиса!"]
+        for file, line, pos, name in chain:
+            file_str = file if file is not None else "<неизвестен>"
+            line_str = line if line is not None else "<не найдена>"
+            pos_str = pos if pos is not None else "<не найдена>"
+            formatted_lines.append(f"-в файле \'{file_str}\' на строке {line_str} на позиции {pos_str}: команда \'{name}\', текст ошибки: {message}")
+        formatted_lines.append("")  # пустая строка для разделения
+        self._errors.extend(formatted_lines)
 
     def _type_check(self):
         """Проверка, соответствует ли тип значения ожидаемому."""

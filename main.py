@@ -7,7 +7,7 @@ with open("Games/BASE_CODE.json", 'r') as file:
     code = file.read()
 
 # Создаем объект LinkerAndSyntaxChecker
-linker = LinkerAndSyntaxChecker(code)
+linker = LinkerAndSyntaxChecker(code, "Games/BASE_CODE.json")
 
 # Вводим J-карту команд
 cmd_J_map = linker.generate_cmd_J_map()
@@ -21,7 +21,7 @@ print()
 
 # Преобразуем JSON-дерево в дерево объектов команд
 cmd_obj_map = linker.generate_cmd_obj_map(cmd_J_map_with_parents)
-print("!!!", cmd_obj_map)
+print(f"cmd_obj_map = {json.dumps(cmd_obj_map, indent=4)}")
 print()
 
 # Проверяем все команды на ошибки

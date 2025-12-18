@@ -2,8 +2,8 @@ import json
 from CommandNode import CommandNode
 
 class CommandInclude(CommandNode):
-    def __init__(self, name, value_type, action, line, char_pos, cmd_path):
-        super().__init__(name, value_type, action, line, char_pos, cmd_path)
+    def __init__(self, name, value_type, action, line, char_pos, cmd_path, file):
+        super().__init__(name, value_type, action, line, char_pos, cmd_path, file)
 
     def _file_exists_check(self):
         """Проверка, что файл существует."""

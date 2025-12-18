@@ -1,8 +1,8 @@
 from CommandNode import CommandNode
 
 class CommandGameField(CommandNode):
-    def __init__(self, name, value_type, action, line, char_pos, cmd_path):
-        super().__init__(name, value_type, action, line, char_pos, cmd_path)
+    def __init__(self, name, value_type, action, line, char_pos, cmd_path, file):
+        super().__init__(name, value_type, action, line, char_pos, cmd_path, file)
 
     def _not_empty_check(self):
         """Проверка, что значение не пустое."""

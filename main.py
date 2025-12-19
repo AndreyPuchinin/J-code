@@ -30,6 +30,7 @@ linker.log_json(cmd_obj_map, 'J-sub_code/cmd_obj_map.json')
 linker.validate_command_tree(cmd_obj_map)
 
 linker.print_bracket_map('Games/BASE_CODE.json','J-sub_code/bracket_map.json')
+print("Файлы с J-sub_code лежат в папке J-sub_code/")
 
 # Получаем ошибки (если есть) и логируем в файл
 errors_output = linker.get_errors()

@@ -1,17 +1,15 @@
-# import importlib
 import json
 import os
-# linker = importlib.import_module("LinkerAndSyntaxChecker")
+
+from CommandNode import CommandNode
 
 class CommandPath:
-    def __init__(self, cmd_type, dict_name, pos_in_list=0, rest_path=None, root=None, code=None):
-        # print("CommandPath object created!")
+    def __init__(self, cmd_type, dict_name, pos_in_list=0, rest_path=None, root=None, code=None, commands=None):
         self._cmd_type = cmd_type  # Тип команды (dict или list)
         self._dict_name = dict_name  # Имя словаря (ключ в JSON)
         self._pos_in_list = pos_in_list  # Позиция в списке (если команда находится в списке)
         self._rest_path = rest_path  # Рекурсивная ссылка на следующий уровень пути
-        # if rest_path != None:
-        #     print(rest_path._dict_name)
+        self._commands = commands or []  # Список зарезервированных команд
         if root == None:
             # Если звено корневое
             # Кладем код в начальное звено цепи
@@ -45,53 +43,67 @@ class CommandPath:
 
         return list(reversed(path))
 
-    def get_line_and_pos(self, code):
+    def get_line_and_pos(self):
         """
         Вычисляет строку и позицию команды на основе пути и кода.
-        :param code: Весь код в виде строки.
         :return: Кортеж (line, char_pos).
         """
+        # Получаем список зарезервированных команд
+        reserved_commands = [list(cmd.keys())[0] for cmd in self._commands]
+        
+        # Определяем текущую команду
+        current_command = self._dict_name
+        if current_command in reserved_commands:
+            # ДОЛЖНО СРАБАТЫВАТЬ ВСЕГДА!!!
+            # НЕЗАРЕЗЕРВИРОВАННЫХ КОММАНД НЕ ДОЛЖНО БЫТЬ!!!
+            full_path = self._get_path()[::-1]
+            bracket_map = self.get_bracket_map()
+            command_element = self.find_command_element(full_path, bracket_map, reserved_commands)
+            if command_element[0]: #in f"\"{reserved_commands}\"":
+                line = command_element[2]
+                char_pos = command_element[3]
+                return line, char_pos
+            
+        # Пока возвращаем None, так как расчет позиции еще не реализован
+        return None, None        
 
-        # Получаем путь к команде
-        path = self._get_path()
-
-        # Получаем карту лексем
-        element_map = self._simple_parse_brackets()
-        # print(json.dumps(element_map, indent=4))
-
-        # Начинаем поиск команды по карте
-        current_level = 0
-        current_index = 0
-
-        for step in path:
-            if isinstance(step, int):  # Если текущий шаг — число (список)
-                # Ищем n-ный элемент списка на текущем уровне
-                count = 0
-                for i in range(current_index, len(element_map)):
-                    element, level, line, char_pos = element_map[i]
-                    if level-1 == current_level and element == '[':
-                        # Нашли начало списка
-                        count += 1
-                        if count == step + 1:
-                            current_index = i + 2 # + 2, тк надо перепрыгнуть скобку и считать следующий литерал
-                            current_level += 1
-                            break
-            elif isinstance(step, str):  # Если текущий шаг — строка (словарь)
-                # Ищем ключ в словаре на текущем уровне
-                for i in range(current_index, len(element_map)):
-                    element, level, line, char_pos = element_map[i]
-                    if level-1 == current_level and element == ':':
-                        # Нашли ключ
-                        current_index = i + 2 # + 2, тк надо перепрыгнуть скобку и считать следующий литерал
-                        current_level += 1
-                        break
-
-        # После прохождения пути возвращаем строку и позицию команды
-        if current_index < len(element_map):
-            _, _, line, char_pos = element_map[current_index]
-            return line, char_pos
-
-        return None, None  # Команда не найдена
+    def find_command_element(self, cmd_path, bracket_map, reserved_commands):
+        index = 0
+        for i, step in enumerate(cmd_path):
+            if isinstance(step, int):
+                # Найти ближайшую '['
+                while index < len(bracket_map) and bracket_map[index][0] != '[':
+                    index += 1
+                if index >= len(bracket_map):
+                    return None
+                # Отсчитать step элементов после '['
+                for _ in range(step):  # +1 чтобы дойти до step-го элемента (0-based)
+                    index += 1
+                    while bracket_map[index][0] == '{' or \
+                          bracket_map[index][0] == ':' or \
+                          bracket_map[index][0] == '}' or \
+                          bracket_map[index][0] == ']' or \
+                          bracket_map[index][0] == '[':
+                        index += 1
+                    if index >= len(bracket_map):
+                        return None
+                # Теперь index на step-том элементе, который должен быть '{'
+            elif isinstance(step, str):
+                # Найти следующий ключ step
+                while index < len(bracket_map) and bracket_map[index][0] != f'"{step}"':
+                    index += 1
+                if index >= len(bracket_map):
+                    return None
+                # Перепрыгнуть ':'
+                index += 1
+                if bracket_map[index][0] != ':':
+                    return None
+                if index >= len(bracket_map):
+                    return None
+            # Если последний шаг, вернуть этот элемент
+            if i == len(cmd_path) - 1:
+                return bracket_map[index]
+        return None  
 
     def _simple_parse_brackets(self, level=0, start_index=0, start_line=1, start_char_pos=0):
         """

@@ -1,16 +1,8 @@
 [
     {
-        "UnknownCommand": {
-            "parent": [
-                0
-            ],
-            "body": true
-        }
-    },
-    {
         "include": {
             "parent": [
-                1
+                0
             ],
             "body": "123"
         }
@@ -18,15 +10,15 @@
     {
         "include": {
             "parent": [
-                2
+                1
             ],
             "body": {
                 "include": {
                     "parent": [
-                        2,
+                        1,
                         "include"
                     ],
-                    "body": "123"
+                    "body": []
                 }
             }
         }
@@ -34,14 +26,14 @@
     {
         "game_field": {
             "parent": [
-                3,
+                2,
                 0
             ],
             "body": [
                 {
                     "UnknownCommand": {
                         "parent": [
-                            3,
+                            2,
                             0,
                             "game_field",
                             0
@@ -52,9 +44,22 @@
                 {
                     "UnknownCommand": {
                         "parent": [
-                            3,
+                            2,
                             0,
                             "game_field",
+                            0,
+                            0
+                        ],
+                        "body": []
+                    }
+                },
+                {
+                    "UnknownCommand": {
+                        "parent": [
+                            2,
+                            0,
+                            "game_field",
+                            0,
                             0,
                             0
                         ],
@@ -67,7 +72,7 @@
     {
         "UnknownCommand": {
             "parent": [
-                4
+                3
             ],
             "body": "1"
         }
@@ -75,7 +80,7 @@
     {
         "UnknownCommand": {
             "parent": [
-                5
+                4
             ],
             "body": []
         }
@@ -83,7 +88,7 @@
     {
         "UnknownCommand": {
             "parent": [
-                5,
+                4,
                 0
             ],
             "body": []
@@ -92,7 +97,7 @@
     {
         "UnknownCommand": {
             "parent": [
-                5,
+                4,
                 1
             ],
             "body": true

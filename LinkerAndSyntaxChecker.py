@@ -2,7 +2,7 @@ from CommandInclude import CommandInclude
 from CommandGameField_test import CommandGameField
 from CommandPath import CommandPath
 from CommandNode import CommandNode
-from CommandUnknown import CommandUnknown
+from CommandUnknown import CommandUnknown, UNKNOWN_COMMAND_NAME
 import json
 import os
 
@@ -305,7 +305,7 @@ class LinkerAndSyntaxChecker:
                     if command_info:
                         command_class = command_info["class"]
                         parent_path = value.get("parent", [])
-                        cmd_path = self._create_command_path(parent_path)
+                        cmd_path = self._create_command_path(parent_path + [key])
 
                         # Определяем line и char_pos на основе полного JSON-кода
                         line, char_pos = self._get_command_position(cmd_path)
@@ -338,17 +338,17 @@ class LinkerAndSyntaxChecker:
             # Возвращаем значение как есть (строки, числа, булевы значения)
             return command_map
 
-    def _get_command_position(self, cmd_path):
+    def _get_command_position(self, cmd_path: CommandPath):
         """
         Определяет позицию команды в исходном коде на основе полного JSON-кода.
         :param cmd_path: Объект CommandPath, содержащий путь к команде.
         :return: Кортеж (line, char_pos).
         """
         if cmd_path:
-            return cmd_path.get_line_and_pos(self._code)  # Используем полный JSON-код
+            return cmd_path.get_line_and_pos()  # Используем полный JSON-код
         return None, None  # Если путь не определен, возвращаем ("<не найдена>", "<не найдена>")
 
-    def _create_command_path(self, parent_path, rest_path=None, start_cmd_path=None):
+    def _create_command_path(self, parent_path, rest_path=None):
         """
         Создает объект CommandPath на основе пути родителя, рекурсивно заполняя rest_path.
         :param parent_path: Путь к родителю (список ключей или индексов).
@@ -357,13 +357,6 @@ class LinkerAndSyntaxChecker:
         """
 
         cmd_path = None
-
-        # print("In")
-
-        # if rest_path is not None:
-        #     print(rest_path._dict_name, parent_path)
-        # else:
-        #     print(None, parent_path)
 
         if not parent_path:
             return rest_path  # Если путь пуст, возвращаем rest_path
@@ -377,21 +370,14 @@ class LinkerAndSyntaxChecker:
 
         # Рекурсивно создаем остальные элементы цепочки
         if len(parent_path) > 1:
-            rest_path = self._create_command_path(parent_path[1:], cmd_path, start_cmd_path)
+            rest_path = self._create_command_path(parent_path[1:], cmd_path)
 
         if isinstance(first_step, int):
             # Шаг — индекс в списке
-            cmd_path = CommandPath(list, "", first_step, rest_path, start_cmd_path, self._code)
+            cmd_path = CommandPath(list, parent_path[-1], first_step, rest_path, None, self._code, self._commands_info) 
         elif isinstance(first_step, str):
             # Шаг — ключ в словаре
-            # print(first_step)
-            cmd_path = CommandPath(dict, first_step, 0, rest_path, start_cmd_path, self._code)
-
-        # Если звено корневое, сохраняем ссылку на него
-        if start_cmd_path == None:
-            start_cmd_path = cmd_path
-
-        # print("out")
+            cmd_path = CommandPath(dict, first_step, 0, rest_path, None, self._code, self._commands_info)
 
         return cmd_path
 
@@ -448,7 +434,7 @@ class LinkerAndSyntaxChecker:
             parent_path = [0]
         else:
             # Несоответствующий тип корня — сообщаем об ошибке и выходим
-            self._append_errors([f"Не могу создать карту скобок!\nНеподдерживаемый корневой тип JSON в файле '{file_path}': {type(data).__name__}", ""])
+            self._append_errors([f"Не могу создать карту скобок!\nНеподдерживаемый корневой тип JSON в файле '{input_file_path}': {type(data).__name__}", ""])
             return
 
         # Создаем корневой CommandPath и вызываем его print_bracket_map
@@ -460,5 +446,5 @@ class LinkerAndSyntaxChecker:
         try:
             root_cmd_path.print_bracket_map(output_file_path)
         except Exception as e:
-            self._append_errors([f"Ошибка при выводе карты скобок для '{file_path}': {e}", ""])
+            self._append_errors([f"Ошибка при выводе карты скобок для '{output_file_path}': {e}", ""])
 

@@ -1,17 +1,17 @@
 [
     {
-        "UnknownCommand": true
-    },
-    {
         "include": "123"
     },
     {
         "include": {
-            "include": "123"
+            "include": []
         }
     },
     {
         "game_field": [
+            {
+                "UnknownCommand": []
+            },
             {
                 "UnknownCommand": []
             },

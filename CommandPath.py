@@ -180,6 +180,10 @@ class CommandPath:
                 i += 1
                 current_char_pos += 1
 
+        # Смещаем текущую позицию, чтобы начало было в 0, а не в 1
+        for element in element_map:
+            element[3] += 1
+
         return element_map # , i, current_line, current_char_pos
 
     def print_bracket_map(self, file_path):

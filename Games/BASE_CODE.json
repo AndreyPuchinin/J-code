@@ -1,7 +1,7 @@
 [
     {"include": "123"},
     {"include": {"include": []}},
-    [{"game_field": [[[""]]]}],
+    [{"game_field":     [[""]]}],
     "1",
     [[], true]
 ]

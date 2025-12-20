@@ -58,6 +58,7 @@ class CommandPath:
             # НЕЗАРЕЗЕРВИРОВАННЫХ КОММАНД НЕ ДОЛЖНО БЫТЬ!!!
             full_path = self._get_path()[::-1]
             bracket_map = self.get_bracket_map()
+            print()
             command_element = self.find_command_element(full_path, bracket_map, reserved_commands)
             if command_element[0]: #in f"\"{reserved_commands}\"":
                 line = command_element[2]
@@ -69,15 +70,19 @@ class CommandPath:
 
     def find_command_element(self, cmd_path, bracket_map, reserved_commands):
         index = 0
+        print(f"cmd_path: {cmd_path}")
         for i, step in enumerate(cmd_path):
+            print(f"Step: {step}")
             if isinstance(step, int):
+                print("int")
                 # Найти ближайшую '['
                 while index < len(bracket_map) and bracket_map[index][0] != '[':
                     index += 1
                 if index >= len(bracket_map):
                     return None
+                print(f"Found [: index={index}, element={bracket_map[index]}")
                 # Отсчитать step элементов после '['
-                for _ in range(step):  # +1 чтобы дойти до step-го элемента (0-based)
+                for _ in range(step+1):  # +1 чтобы дойти до step-го элемента (0-based)
                     index += 1
                     while bracket_map[index][0] == '{' or \
                           bracket_map[index][0] == ':' or \
@@ -85,21 +90,27 @@ class CommandPath:
                           bracket_map[index][0] == ']' or \
                           bracket_map[index][0] == '[':
                         index += 1
+                    print(f"Stepped to index={index}, element={bracket_map[index]}")
                     if index >= len(bracket_map):
                         return None
                 # Теперь index на step-том элементе, который должен быть '{'
             elif isinstance(step, str):
+                print("str")
                 # Найти следующий ключ step
                 while index < len(bracket_map) and bracket_map[index][0] != f'"{step}"':
                     index += 1
                 if index >= len(bracket_map):
                     return None
-                # Перепрыгнуть ':'
+                # Пропустить ключ
                 index += 1
+                print(f"Found \':\': index={index}, element={bracket_map[index]}")
                 if bracket_map[index][0] != ':':
                     return None
+                # Перепрыгнуть ':'
+                index += 1
                 if index >= len(bracket_map):
                     return None
+                print(f"Found key: index={index}, element={bracket_map[index]}")
             # Если последний шаг, вернуть этот элемент
             if i == len(cmd_path) - 1:
                 return bracket_map[index]
